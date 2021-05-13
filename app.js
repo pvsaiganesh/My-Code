@@ -131,8 +131,6 @@ app.get(
         user inner join tweet on user.user_id=tweet.user_id
         WHERE
         user.user_id IN (${ids.toString()})
-        GROUP BY
-        tweet
         ORDER BY
         dateTime desc       
         LIMIT        
@@ -171,16 +169,15 @@ app.get("/user/following/", authenticateJwtToken, async (request, response) => {
 
 app.get("/user/followers/", authenticateJwtToken, async (request, response) => {
   let { username } = request;
-  const getFollowersQuery = `
-    SELECT
-    follower_id
-    FROM
-    user INNER JOIN follower on user.user_id=follower.follower_user_id
-    WHERE
-    username='${username}';
-    `;
-  dbResponse = await database.all(getFollowersQuery);
-  ans = [];
+  const getUserId = `
+  select 
+  follower_id
+  from 
+  user inner join  follower on user.user_id=follower.follower_user_id
+  where 
+  username='${username}'`;
+  const dbResponse = await database.all(getUserId);
+  let names = [];
   for (let obj of dbResponse) {
     let id = obj.follower_id;
     getNameQuery = `
@@ -189,11 +186,12 @@ app.get("/user/followers/", authenticateJwtToken, async (request, response) => {
     FROM
     user
     WHERE
-    user_id=${id}`;
-    final_ans = await database.get(getNameQuery);
-    ans.push(final_ans);
+    user_id =${id}`;
+    ans = await database.get(getNameQuery);
+    names.push(ans);
   }
-  response.send(ans);
+
+  response.send(names);
 });
 
 app.get(
@@ -225,25 +223,31 @@ user.user_id=${id}
       const ids = await database.all(getTweetIds);
       ans.push(...ids);
     }
-let final_ans;
-    for (let obj of ans){
-if(obj.tweet_id==tweetId){
-    const getTweet=`
+    let final_ans;
+    for (let obj of ans) {
+      if (obj.tweet_id == tweetId) {
+        const getTweet = `
     select
     tweet,
-    count(like_id) as likes,
+    count(like_id) as likes
+    from 
+    tweet inner join like on tweet.tweet_id=like.tweet_id 
+    where
+    tweet.tweet_id=${tweetId}
+    `;
+        const getReplies = `
+    select
     count(reply_id) as replies,
     date_time as dateTime
     from 
-    tweet inner join like on tweet.tweet_id=like.tweet_id 
-    inner join reply on tweet.tweet_id=reply.tweet_id
+    tweet inner join reply on tweet.tweet_id=reply.tweet_id 
     where
     tweet.tweet_id=${tweetId}
-    group by
-    tweet`
-    final_ans=await database.get(getTweet)
-    
-}        
+    `;
+        ans = await database.get(getTweet);
+        ans2 = await database.get(getReplies);
+        final_ans = { ...ans, ...ans2 };
+      }
     }
     if (final_ans === undefined) {
       response.status(401);
@@ -255,30 +259,33 @@ if(obj.tweet_id==tweetId){
 );
 app.get("/user/tweets/", authenticateJwtToken, async (request, response) => {
   const { username } = request;
-  const getId = `
-  select 
-  user_id
-  from
-  user
-  where
-  username='${username}'`;
-  const id = await database.get(getId);
-  const { user_id } = id;
-  const getTweetsQuery = `
+  let allTweets;
+  const getTweetsHalf = `
    SELECT
    tweet,
-   count(like_id) as likes,
+   count(like_id) as likes
+   FROM
+   user  natural join tweet 
+   inner join like on tweet.tweet_id=like.tweet_id
+   WHERE 
+   username='${username}'
+   group by
+   tweet`;
+  const getTweetsHalf2 = `
+   SELECT
    count(reply_id) as replies,
    date_time as dateTime
    FROM
    user  natural join tweet 
-   left join like on tweet.tweet_id=like.tweet_id
-   left join reply on tweet.tweet_id=reply.tweet_id
+   inner join reply on tweet.tweet_id=reply.tweet_id
    WHERE 
-   tweet.user_id=${user_id}
+   username='${username}'
    group by
    tweet`;
-  const allTweets = await database.all(getTweetsQuery);
+
+  const one = await database.all(getTweetsHalf);
+  const two = await database.all(getTweetsHalf2);
+  allTweets = [...one, ...two];
   response.send(allTweets);
 });
 app.post("/user/tweets/", authenticateJwtToken, async (request, response) => {
@@ -419,15 +426,15 @@ app.get(
     user inner join tweet on user.user_id=tweet.user_id
     WHERE
     user.user_id = ${id}`;
-      eachFollowingUser = await database.get(getNameQuery);
-      ans.push(eachFollowingUser);
+      eachFollowingUser = await database.all(getNameQuery);
+      ans.push(...eachFollowingUser);
     }
-    const total_replies = [];
+    let total_replies=[];
     let tweet;
     for (let obj of ans) {
       let id = obj.tweet_id;
       if (id == tweetId) {
-        const getReplyIds = `
+        const getReplies = `
           SELECT
           name,
           reply
@@ -435,13 +442,9 @@ app.get(
           user inner join reply on user.user_id=reply.user_id
           WHERE
           tweet_id=${id}
-          group by
-          tweet_id          
           `;
-        const replies = await database.all(getReplyIds);
-        for (let obj of replies) {
-          total_replies.push(obj);
-        }
+        const replies = await database.all(getReplies);
+        total_replies.push(...replies)
         getTweet = `
     select
     tweet
@@ -452,7 +455,7 @@ app.get(
         tweet = await database.get(getTweet);
       }
     }
-    if (total_replies.length === 0) {
+    if (tweet===undefined) {
       response.status(401);
       response.send("Invalid Request");
     } else {

@@ -12,18 +12,19 @@ POST http://localhost:3000/login/
 Content-Type: application/json
 
 {
-  "username":"JoeBiden",
-  "password":"biden@123"
+  "username": "adam_richard",
+  "password": "richard_567"
 }
 ###
-GET http://localhost:3000/tweets/2
-Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjE4MTYxOTU5fQ.ry2QwB0fDwRzjytVBmqyMygq3zy0sL0yO4N2T_MwPro
-###
-GET http://localhost:3000/user/followers
+GET http://localhost:3000/tweets/7
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjE4MTYxOTU5fQ.ry2QwB0fDwRzjytVBmqyMygq3zy0sL0yO4N2T_MwPro
 
 ###
-GET http://localhost:3000/tweets/7/replies
+GET http://localhost:3000/user/tweets
+Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjE4MTYxOTU5fQ.ry2QwB0fDwRzjytVBmqyMygq3zy0sL0yO4N2T_MwPro
+
+###
+GET http://localhost:3000/tweets/1/replies
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjE4MTYxOTU5fQ.ry2QwB0fDwRzjytVBmqyMygq3zy0sL0yO4N2T_MwPro
 ###
 POST http://localhost:3000/user/tweets/
