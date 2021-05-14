@@ -24,7 +24,7 @@ GET http://localhost:3000/user/tweets
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjE4MTYxOTU5fQ.ry2QwB0fDwRzjytVBmqyMygq3zy0sL0yO4N2T_MwPro
 
 ###
-GET http://localhost:3000/tweets/1/replies
+GET http://localhost:3000/user/followers
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VybmFtZSI6IkpvZUJpZGVuIiwiaWF0IjoxNjE4MTYxOTU5fQ.ry2QwB0fDwRzjytVBmqyMygq3zy0sL0yO4N2T_MwPro
 ###
 POST http://localhost:3000/user/tweets/

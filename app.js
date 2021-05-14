@@ -146,7 +146,7 @@ app.get("/user/following/", authenticateJwtToken, async (request, response) => {
     SELECT
     following_user_id
     FROM
-    user INNER JOIN follower on user.user_id=follower.follower_user_id
+    follower INNER JOIN user on user.user_id=follower.follower_user_id
     WHERE
     username='${username}'
     `;
@@ -259,33 +259,23 @@ user.user_id=${id}
 );
 app.get("/user/tweets/", authenticateJwtToken, async (request, response) => {
   const { username } = request;
-  let allTweets;
-  const getTweetsHalf = `
+  const getTweets = `
    SELECT
    tweet,
-   count(like_id) as likes
-   FROM
-   user  natural join tweet 
-   inner join like on tweet.tweet_id=like.tweet_id
+   (select count(like_id)
+    from like 
+    ) as likes,
+   (select count(reply_id)
+    from reply
+    ) as replies,
+    date_time as dateTime
+    FROM
+   user join tweet 
    WHERE 
    username='${username}'
    group by
    tweet`;
-  const getTweetsHalf2 = `
-   SELECT
-   count(reply_id) as replies,
-   date_time as dateTime
-   FROM
-   user  natural join tweet 
-   inner join reply on tweet.tweet_id=reply.tweet_id
-   WHERE 
-   username='${username}'
-   group by
-   tweet`;
-
-  const one = await database.all(getTweetsHalf);
-  const two = await database.all(getTweetsHalf2);
-  allTweets = [...one, ...two];
+  const allTweets = await database.all(getTweets);
   response.send(allTweets);
 });
 app.post("/user/tweets/", authenticateJwtToken, async (request, response) => {
@@ -429,7 +419,7 @@ app.get(
       eachFollowingUser = await database.all(getNameQuery);
       ans.push(...eachFollowingUser);
     }
-    let total_replies=[];
+    let total_replies = [];
     let tweet;
     for (let obj of ans) {
       let id = obj.tweet_id;
@@ -439,12 +429,12 @@ app.get(
           name,
           reply
           FROM
-          user inner join reply on user.user_id=reply.user_id
+          user natural join reply 
           WHERE
           tweet_id=${id}
           `;
         const replies = await database.all(getReplies);
-        total_replies.push(...replies)
+        total_replies.push(...replies);
         getTweet = `
     select
     tweet
@@ -455,11 +445,11 @@ app.get(
         tweet = await database.get(getTweet);
       }
     }
-    if (tweet===undefined) {
+    if (tweet === undefined) {
       response.status(401);
       response.send("Invalid Request");
     } else {
-      response.send({ tweet: tweet.tweet, replies: total_replies });
+      response.send({ replies: total_replies });
     }
   }
 );
